@@ -1,4 +1,4 @@
-package hudson.plugins.hello_world;
+package njnm.plugins.hello_world;
 
 import hudson.Launcher;
 import hudson.Extension;

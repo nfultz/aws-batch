@@ -1,53 +1,44 @@
 package njnm.plugins.aws_batch;
 
-import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+
 import com.amazonaws.services.batch.AWSBatch;
+import com.amazonaws.services.batch.AWSBatchClientBuilder;
 import com.amazonaws.services.batch.model.ContainerOverrides;
 import com.amazonaws.services.batch.model.SubmitJobRequest;
-import hudson.Launcher;
+
+
+import com.amazonaws.services.batch.model.SubmitJobResult;
 import hudson.Extension;
-import hudson.model.Build;
+import hudson.Launcher;
+
 import hudson.model.BuildListener;
 import hudson.model.AbstractBuild;
+
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
-import hudson.util.FormValidation;
-import org.kohsuke.stapler.QueryParameter;
+
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.management.Descriptor;
-import javax.servlet.ServletException;
 
-
-import com.amazonaws.services.batch.AWSBatchClientBuilder;
 
 
 import net.sf.json.JSONObject;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
 /**
- * Sample {@link Builder}.
+ * AWS Batch Builder {@link Builder}.
  *
  * <p>
- * When the user configures the project and enables this builder,
- * {@link DescriptorImpl#newInstance(StaplerRequest)} is invoked
- * and a new {@link AwsBatchBuilder} is created. The created
- * instance is persisted to the project configuration XML by using
- * XStream, so this allows you to use instance fields (like {@link #command})
- * to remember the configuration.
+ *     This provides a minimum viable product for running jobs on AWS batch from jenkins.
  *
- * <p>
- * When a build is performed, the {@link #perform(Build, Launcher, BuildListener)} method
- * will be invoked. 
- *
- * @author Kohsuke Kawaguchi
+ * @author Neal Fultz
  */
 public class AwsBatchBuilder extends Builder {
 
@@ -91,9 +82,7 @@ public class AwsBatchBuilder extends Builder {
      * We'll use these from the <tt>config.jelly</tt>.
      */
 
-    public String getJobdefinition() {
-        return jobdefinition;
-    }
+    public String getJobdefinition() { return jobdefinition; }
     public String getJobname()       { return jobname; }
     public String getJobqueue()      { return jobqueue; }
 
@@ -125,15 +114,14 @@ public class AwsBatchBuilder extends Builder {
 
 
         DescriptorImpl globals = getDescriptor();
-        AWSBatchClientBuilder awsbcb = AWSBatchClientBuilder.standard();
-        awsbcb.setRegion(globals.getAwsRegion());
-        awsbcb.setCredentials(new AWSStaticCredentialsProvider(
-                new BasicAWSCredentials(globals.getAwsAccessKey(), globals.getAwsSecretToken())
-        ));
+        AWSBatch awsbatch = AWSBatchClientBuilder.standard()
+                .withRegion(globals.getAwsRegion())
+                .withCredentials(new AWSStaticCredentialsProvider(
+                    new BasicAWSCredentials(globals.getAwsAccessKey(), globals.getAwsSecretToken())))
+                .build();
 
-        AWSBatch awsbatch = awsbcb.build();
-        awsbatch.submitJob(job);
-        listener.getLogger().println("Job Submitted.");
+        SubmitJobResult sjr = awsbatch.submitJob(job);
+        listener.getLogger().println("Job Submitted:\n" + sjr.toString());
 
         return true;
     }
@@ -172,12 +160,7 @@ public class AwsBatchBuilder extends Builder {
     /**
      * Descriptor for {@link AwsBatchBuilder}.
      * The class is marked as public so that it can be accessed from views.
-     *
-     * <p>
-     * See <tt>views/hudson/plugins/aws_batch/HelloWorldBuilder/*.jelly</tt>
-     * for the actual HTML fragment for the configuration screen.
      */
-    // this annotation tells Hudson that this is the implementation of an extension point
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
         /**

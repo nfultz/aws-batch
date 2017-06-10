@@ -25,7 +25,7 @@ import java.util.HashMap;
  * <p>
  * When the user configures the project and enables this builder,
  * {@link DescriptorImpl#newInstance(StaplerRequest)} is invoked
- * and a new {@link HelloWorldBuilder} is created. The created
+ * and a new {@link AwsBatchBuilder} is created. The created
  * instance is persisted to the project configuration XML by using
  * XStream, so this allows you to use instance fields (like {@link #command})
  * to remember the configuration.
@@ -36,7 +36,7 @@ import java.util.HashMap;
  *
  * @author Kohsuke Kawaguchi
  */
-public class HelloWorldBuilder extends Builder {
+public class AwsBatchBuilder extends Builder {
 
     private final  String jobname;
     private final String jobdefinition;
@@ -54,7 +54,7 @@ public class HelloWorldBuilder extends Builder {
      * values from the configuration form page with matching parameter names.
      */
     @DataBoundConstructor
-    public HelloWorldBuilder(String jobname, String jobdefinition,
+    public AwsBatchBuilder(String jobname, String jobdefinition,
                              String command, String jobqueue, String vcpu,
                              String memory,  String retries){/*,
                              HashMap<String, String> params,
@@ -127,7 +127,7 @@ public class HelloWorldBuilder extends Builder {
     }
 
     /**
-     * Descriptor for {@link HelloWorldBuilder}.
+     * Descriptor for {@link AwsBatchBuilder}.
      * The class is marked as public so that it can be accessed from views.
      *
      * <p>

@@ -1,4 +1,4 @@
-package njnm.plugins.hello_world;
+package njnm.plugins.aws_batch;
 
 import hudson.Launcher;
 import hudson.Extension;
@@ -131,7 +131,7 @@ public class AwsBatchBuilder extends Builder {
      * The class is marked as public so that it can be accessed from views.
      *
      * <p>
-     * See <tt>views/hudson/plugins/hello_world/HelloWorldBuilder/*.jelly</tt>
+     * See <tt>views/hudson/plugins/aws_batch/HelloWorldBuilder/*.jelly</tt>
      * for the actual HTML fragment for the configuration screen.
      */
     // this annotation tells Hudson that this is the implementation of an extension point

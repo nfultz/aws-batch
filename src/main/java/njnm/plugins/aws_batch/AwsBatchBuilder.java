@@ -1,5 +1,11 @@
 package njnm.plugins.aws_batch;
 
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.batch.AWSBatch;
+import com.amazonaws.services.batch.model.ContainerOverrides;
+import com.amazonaws.services.batch.model.SubmitJobRequest;
 import hudson.Launcher;
 import hudson.Extension;
 import hudson.model.Build;
@@ -7,17 +13,24 @@ import hudson.model.BuildListener;
 import hudson.model.AbstractBuild;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
+import hudson.util.FormValidation;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.management.Descriptor;
+import javax.servlet.ServletException;
 
-//import com.amazonaws.services.batch.AWSBatchClientBuilder;
+
+import com.amazonaws.services.batch.AWSBatchClientBuilder;
 
 
 import net.sf.json.JSONObject;
 
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * Sample {@link Builder}.
@@ -38,13 +51,17 @@ import java.util.HashMap;
  */
 public class AwsBatchBuilder extends Builder {
 
-    private final  String jobname;
+    // Job fields
+    private final String jobname;
     private final String jobdefinition;
     private final String jobqueue;
-    private final  String command;
-    private final  String vcpu;
-    private final  String memory;
-    private final  String retries;
+
+    // Container overrides
+    private final List<String> command;
+    private final int vcpu;
+    private final int memory;
+    private final int retries;
+
     private final HashMap<String, String> params;
     private final HashMap<String, String> environment;
 
@@ -55,34 +72,35 @@ public class AwsBatchBuilder extends Builder {
      */
     @DataBoundConstructor
     public AwsBatchBuilder(String jobname, String jobdefinition,
-                             String command, String jobqueue, String vcpu,
-                             String memory,  String retries){/*,
+                           String command, String jobqueue,
+                           String vcpu, String memory, String retries){/*,
                              HashMap<String, String> params,
                              HashMap<String, String> environment) {*/
         this.jobname = jobname;
         this.jobdefinition = jobdefinition;
         this.jobqueue = jobqueue;
-        this.command = command;
-        this.vcpu = vcpu;
-        this.memory = memory;
-        this.retries = retries;
+        this.command = Arrays.asList(command.split("\\s+"));
+        this.vcpu = Integer.parseInt(vcpu);
+        this.memory = Integer.parseInt(memory);
+        this.retries = Integer.parseInt(retries);
         this.params = null;
         this.environment = null;
     }
 
     /**
-     * We'll use this from the <tt>config.jelly</tt>.
+     * We'll use these from the <tt>config.jelly</tt>.
      */
 
     public String getJobdefinition() {
         return jobdefinition;
     }
-    public String getCommand()       { return command;}
     public String getJobname()       { return jobname; }
     public String getJobqueue()      { return jobqueue; }
-    public String getVcpu()          { return vcpu; }
-    public String getMemory()        { return memory; }
-    public String getRetries()       { return retries; }
+
+    public List<String> getCommand() { return command;}
+    public int getVcpu()             { return vcpu; }
+    public int getMemory()           { return memory; }
+    public int getRetries()          { return retries; }
 
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
@@ -90,9 +108,34 @@ public class AwsBatchBuilder extends Builder {
         // since this is a dummy, we just say 'hello world' and call that a build
 
         // this also shows how you can consult the global configuration of the builder
-            listener.getLogger().println(getDescriptor().toString());
-            listener.getLogger().println(this.toString());
-            return true;
+            //listener.getLogger().println(getDescriptor().toString());
+        listener.getLogger().println(this.toString());
+
+        SubmitJobRequest job = new SubmitJobRequest()
+                .withJobName(jobname)
+                .withJobDefinition(jobdefinition)
+                .withJobQueue(jobqueue)
+                .withContainerOverrides(
+                        new ContainerOverrides()
+                                .withCommand(command)
+                                .withMemory(memory)
+                                .withVcpus(vcpu)
+                );
+
+
+
+        DescriptorImpl globals = getDescriptor();
+        AWSBatchClientBuilder awsbcb = AWSBatchClientBuilder.standard();
+        awsbcb.setRegion(globals.getAwsRegion());
+        awsbcb.setCredentials(new AWSStaticCredentialsProvider(
+                new BasicAWSCredentials(globals.getAwsAccessKey(), globals.getAwsSecretToken())
+        ));
+
+        AWSBatch awsbatch = awsbcb.build();
+        awsbatch.submitJob(job);
+        listener.getLogger().println("Job Submitted.");
+
+        return true;
     }
 
 
@@ -115,14 +158,14 @@ public class AwsBatchBuilder extends Builder {
 
     @Override
     public String toString() {
-        return "HelloWorldBuilder{" +
+        return "AwsBatchBuilder{" +
                 "jobname='" + jobname + '\'' +
                 ", jobdefinition='" + jobdefinition + '\'' +
                 ", jobqueue='" + jobqueue + '\'' +
                 ", command='" + command + '\'' +
-                ", vcpu='" + vcpu + '\'' +
-                ", memory='" + memory + '\'' +
-                ", retries='" + retries + '\'' +
+                ", vcpu=" + vcpu +
+                ", memory=" + memory +
+                ", retries=" + retries +
                 '}';
     }
 

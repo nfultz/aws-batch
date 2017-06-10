@@ -14,13 +14,16 @@
         <f:textbox />
     </f:entry>
     <f:entry title="vCPU" field="vcpu">
-        <f:textbox />
+        <f:textbox
+        />
     </f:entry>
     <f:entry title="Memory (Mb)" field="memory">
-        <f:textbox />
+        <f:textbox
+       />
     </f:entry>
     <f:entry title="Retries" field="retries">
-        <f:textbox />
+        <f:textbox
+        />
     </f:entry>
 
 </j:jelly>

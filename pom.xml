@@ -39,12 +39,12 @@
   <packaging>hpi</packaging>
 
   <name>AWS Batch Example Plugin</name>
-  <url>http://wiki.jenkins-ci.org/display/JENKINS/AWS+Batch+Example+Plugin</url>
+  <url>https://github.com/nfultz/aws_batch</url>
 
   <licenses>
     <license>
       <name>The MIT license</name>
-      <url>https://github.com/jenkinsci/hello-world-plugin/raw/master/LICENSE.txt</url>
+      <url>https://github.com/nfultz/aws_batch/raw/master/LICENSE.txt</url>
       <distribution>repo</distribution>
     </license>
   </licenses>
@@ -58,9 +58,9 @@
   </developers>
 
   <scm>
-    <connection>scm:git:git://github.com/jenkinsci/hello-world-plugin.git</connection>
-    <developerConnection>scm:git:git@github.com:jenkinsci/hello-world-plugin.git</developerConnection>
-    <url>https://github.com/jenkinsci/hello-world-plugin</url>
+    <connection>scm:git:git://github.com/nfultz/aws_batch.git</connection>
+    <developerConnection>scm:git:git@github.com:nfultz/aws_batch.git</developerConnection>
+    <url>https://github.com/nfultz/aws_batch</url>
     <tag>HEAD</tag>
   </scm>
 
@@ -86,7 +86,7 @@
   <distributionManagement>
     <site>
       <id>github-project-site</id>
-      <url>gitsite:git@github.com/jenkinsci/hello-world-plugin</url>
+      <url>gitsite:git@github.com/nfultz/aws_batch</url>
     </site>
   </distributionManagement>
 

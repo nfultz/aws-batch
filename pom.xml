@@ -32,7 +32,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>2.2</version>
+    <version>2.20</version>
   </parent>
 
   <artifactId>aws_batch</artifactId>
@@ -92,11 +92,8 @@
   </distributionManagement>
 
   <properties>
-    <jenkins.version>1.580.1</jenkins.version>
-    <java.level>6</java.level>
     <aws.version> 1.11.144</aws.version>
     <jsonpath.version>2.0.0</jsonpath.version>
-
   </properties>
 
   <dependencies>
@@ -114,6 +111,12 @@
       <groupId>com.jayway.jsonpath</groupId>
       <artifactId>json-path</artifactId>
       <version>${jsonpath.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>job-dsl</artifactId>
+      <version>1.63</version>
+      <optional>true</optional>
     </dependency>
   </dependencies>
 

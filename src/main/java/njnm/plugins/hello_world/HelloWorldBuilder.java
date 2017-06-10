@@ -56,9 +56,9 @@ public class HelloWorldBuilder extends Builder {
     @DataBoundConstructor
     public HelloWorldBuilder(String jobname, String jobdefinition,
                              String command, String jobqueue, String vcpu,
-                             String memory,  String retries,
+                             String memory,  String retries){/*,
                              HashMap<String, String> params,
-                             HashMap<String, String> environment) {
+                             HashMap<String, String> environment) {*/
         this.jobname = jobname;
         this.jobdefinition = jobdefinition;
         this.jobqueue = jobqueue;
@@ -66,8 +66,8 @@ public class HelloWorldBuilder extends Builder {
         this.vcpu = vcpu;
         this.memory = memory;
         this.retries = retries;
-        this.params = params;
-        this.environment = environment;
+        this.params = null;
+        this.environment = null;
     }
 
     /**
@@ -113,6 +113,19 @@ public class HelloWorldBuilder extends Builder {
         return (DescriptorImpl)super.getDescriptor();
     }
 
+    @Override
+    public String toString() {
+        return "HelloWorldBuilder{" +
+                "jobname='" + jobname + '\'' +
+                ", jobdefinition='" + jobdefinition + '\'' +
+                ", jobqueue='" + jobqueue + '\'' +
+                ", command='" + command + '\'' +
+                ", vcpu='" + vcpu + '\'' +
+                ", memory='" + memory + '\'' +
+                ", retries='" + retries + '\'' +
+                '}';
+    }
+
     /**
      * Descriptor for {@link HelloWorldBuilder}.
      * The class is marked as public so that it can be accessed from views.
@@ -144,7 +157,7 @@ public class HelloWorldBuilder extends Builder {
          */
         @Override
         public String getDisplayName() {
-            return "Say hello world";
+            return "Run a job on AWS Batch";
         }
 
         /**
@@ -159,6 +172,8 @@ public class HelloWorldBuilder extends Builder {
         public boolean configure(StaplerRequest staplerRequest, JSONObject json) throws FormException {
             // to persist global configuration information,
             // set that to properties and call save().
+            // System.out.println(json.toString());
+            json = json.getJSONObject("awsBatch");
             awsAccessKey   = json.getString("awsAccessKey");
             awsSecretToken = json.getString("awsSecretToken");
             awsRegion      = json.getString("awsRegion");
@@ -167,9 +182,7 @@ public class HelloWorldBuilder extends Builder {
             return true; // indicate that everything is good so far
         }
 
-        /**
-         * This method returns true if the global configuration says we should speak French.
-         */
+
         public String getAwsAccessKey()   { return awsAccessKey; }
         public String getAwsSecretToken() {
             return awsSecretToken;

@@ -1,23 +1,26 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-  <!--
-    This jelly script is used for per-project configuration.
-    See global.jelly for a general discussion about jelly script.
-  -->
-  <f:entry title="Name" field="name">
-    <!--
-      our HelloWorldBuilder has one String property named 'name', and these two
-      tags in combination creates the <input type="text"/> for that property.
 
-      For this to work correctly, you need to have:
+    <f:entry title="Job Name" field="jobname">
+        <f:textbox />
+    </f:entry>
+    <f:entry title="Job Definition" field="jobdefinition">
+        <f:textbox />
+    </f:entry>
+    <f:entry title="Job Queue" field="jobqueue">
+        <f:textbox />
+    </f:entry>
+    <f:entry title="Command" field="command">
+        <f:textbox />
+    </f:entry>
+    <f:entry title="vCPU" field="vcpu">
+        <f:textbox />
+    </f:entry>
+    <f:entry title="Memory (Mb)" field="memory">
+        <f:textbox />
+    </f:entry>
+    <f:entry title="Retries" field="retries">
+        <f:textbox />
+    </f:entry>
 
-      1) getName() or the public name field so that Hudson can retrieve a value
-      2) The 'name' parameter in the constructor marked by @DataBoundConstructor,
-         so that Hudson can create the new HelloWorldBuilder with the user-configured value
-    -->
-    <f:textbox />
-	</f:entry>
-  <!--
-    If you have multiple properties that need to be configured, add more <f:entry />s
-  -->
 </j:jelly>

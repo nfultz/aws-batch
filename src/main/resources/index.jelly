@@ -5,5 +5,5 @@
 -->
 <?jelly escape-by-default='true'?>
 <div>
-  This plugin is a sample plugin to explain how to write a Jenkins plugin.
+  This plugin is a runner for AWS Batch.
 </div>

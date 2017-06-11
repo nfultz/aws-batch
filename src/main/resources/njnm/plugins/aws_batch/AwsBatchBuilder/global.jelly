@@ -18,7 +18,7 @@
             <f:textbox  />
         </f:entry>
         <f:entry title="AWS Secret Token" field="awsSecretToken">
-            <f:textbox />
+            <f:password />
         </f:entry>
         <f:entry title="AWS Region" field="awsRegion">
             <f:textbox />

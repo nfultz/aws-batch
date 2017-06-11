@@ -39,7 +39,7 @@
   <version>2.1-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
-  <name>AWS Batch Example Plugin</name>
+  <name>AWS Batch Plugin</name>
   <url>https://github.com/nfultz/aws_batch</url>
 
   <licenses>
@@ -70,11 +70,6 @@
       <id>repo.jenkins-ci.org</id>
       <url>http://repo.jenkins-ci.org/public/</url>
     </repository>
-    <repository>
-      <id>mvnrepository.com</id>
-      <url>https://mvnrepository.com/repos/central</url>
-    </repository>
-
   </repositories>
 
   <pluginRepositories>

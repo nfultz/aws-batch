@@ -12,10 +12,9 @@ job('Batch_demo_foo') {
                         'first-run-job-definition:1', 
                         'echo hello', 
                         'first-run-job-queue', 
-                        '2', '1000', '1')
+                        2, 1000, 1)
     }
 }
 
 TODO:
-  * Read credentials from special jenkins key manager
   * Update build status by polling job id, checking exit code

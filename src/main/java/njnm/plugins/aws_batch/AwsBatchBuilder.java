@@ -163,12 +163,7 @@ public class AwsBatchBuilder extends Builder {
         listener.getLogger().println(job.toString());
 
 
-        DescriptorImpl globals = getDescriptor();
-        AWSBatch awsbatch = AWSBatchClientBuilder.standard()
-                .withRegion(globals.getAwsRegion())
-                .withCredentials(new AWSStaticCredentialsProvider(
-                    new BasicAWSCredentials(globals.getAwsAccessKey(), globals.getAwsSecretToken())))
-                .build();
+        AWSBatch awsbatch = getDescriptor().getAwsBatch();
 
         SubmitJobResult sjr = awsbatch.submitJob(job);
         listener.getLogger().println("Job Submitted:\n" + sjr.toString());
@@ -279,5 +274,15 @@ public class AwsBatchBuilder extends Builder {
         }
         public String getAwsRegion()      { return awsRegion ; }
 
+
+        public AWSBatch getAwsBatch() {
+            return !nonDefaultCreds ? AWSBatchClientBuilder.defaultClient() :
+                AWSBatchClientBuilder.standard()
+                        .withRegion(awsRegion)
+                        .withCredentials(new AWSStaticCredentialsProvider(
+                                new BasicAWSCredentials(awsAccessKey, awsSecretToken)))
+                        .build();
+
+        }
     }
 }

@@ -220,6 +220,9 @@ public class AwsBatchBuilder extends Builder {
          * <p>
          * If you don't want fields to be persisted, use <tt>transient</tt>.
          */
+
+        private boolean useDefaultAwsClient = true;
+
         private String awsAccessKey;
         private String awsSecretToken;
         private String awsRegion;
@@ -250,13 +253,25 @@ public class AwsBatchBuilder extends Builder {
             // set that to properties and call save().
             // System.out.println(json.toString());
             json = json.getJSONObject("awsBatch");
-            awsAccessKey   = json.getString("awsAccessKey");
-            awsSecretToken = json.getString("awsSecretToken");
-            awsRegion      = json.getString("awsRegion");
 
+            useDefaultAwsClient =  json.getBoolean("useDefaultAwsClient");
+
+            if(useDefaultAwsClient) {
+                awsAccessKey = "";
+                awsRegion = "";
+                awsRegion = "";
+            }
+            else {
+                awsAccessKey = json.getString("awsAccessKey");
+                awsSecretToken = json.getString("awsSecretToken");
+                awsRegion = json.getString("awsRegion");
+
+            }
             save();
             return true; // indicate that everything is good so far
         }
+
+        public boolean useDefaultAwsClient()   { return useDefaultAwsClient; }
 
 
         public String getAwsAccessKey()   { return awsAccessKey; }
@@ -267,7 +282,7 @@ public class AwsBatchBuilder extends Builder {
 
         @Override
         public String toString() {
-            return "DescriptorImpl{" +
+            return useDefaultAwsClient ? "DescriptorImpl{default}" : "DescriptorImpl{" +
                     "awsAccessKey='" + awsAccessKey + '\'' +
                     ", awsSecretToken='" + awsSecretToken + '\'' +
                     ", awsRegion='" + awsRegion + '\'' +

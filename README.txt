@@ -16,3 +16,6 @@ job('Batch_demo_foo') {
     }
 }
 
+TODO:
+  * Use standard jenkins timestamp library instead of hardcoded time formats.
+  * Add support for Environment variables and ECS params.

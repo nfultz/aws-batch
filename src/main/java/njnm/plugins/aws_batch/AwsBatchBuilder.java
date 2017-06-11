@@ -1,26 +1,16 @@
 package njnm.plugins.aws_batch;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-
 import com.amazonaws.services.batch.AWSBatch;
 import com.amazonaws.services.batch.AWSBatchClientBuilder;
 import com.amazonaws.services.batch.model.*;
 
 
-import com.amazonaws.services.logs.AWSLogs;
-import com.amazonaws.services.logs.AWSLogsClientBuilder;
-import com.amazonaws.services.logs.model.GetLogEventsRequest;
-import com.amazonaws.services.logs.model.GetLogEventsResult;
-import com.amazonaws.services.logs.model.OutputLogEvent;
 import hudson.Extension;
 import hudson.Launcher;
 
-import hudson.model.BallColor;
 import hudson.model.BuildListener;
 import hudson.model.AbstractBuild;
 
-import hudson.model.Result;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
 
@@ -30,15 +20,11 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import javax.management.Descriptor;
 
 
-
 import net.sf.json.JSONObject;
 
-import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * AWS Batch Builder {@link Builder}.
@@ -169,12 +155,12 @@ public class AwsBatchBuilder extends Builder {
         listener.getLogger().println(job.toString());
 
 
-        AWSBatch awsbatch = getDescriptor().getAwsBatch();
+        AWSBatch awsbatch = AWSBatchClientBuilder.defaultClient();
 
         SubmitJobResult sjr = awsbatch.submitJob(job);
         listener.getLogger().println("Job Submitted:\n" + sjr.toString());
 
-        BatchLogRetriever retriever = new BatchLogRetriever(listener, awsbatch, sjr, 15);
+        BatchLogRetriever retriever = new BatchLogRetriever(listener, awsbatch, sjr, getDescriptor().logPollingFreq);
 
         retriever.doLogging();
 
@@ -226,11 +212,7 @@ public class AwsBatchBuilder extends Builder {
          * If you don't want fields to be persisted, use <tt>transient</tt>.
          */
 
-        private boolean nonDefaultCreds;
-
-        private String awsAccessKey;
-        private String awsSecretToken;
-        private String awsRegion;
+        private int logPollingFreq = 15;
 
         public DescriptorImpl() {
             load();
@@ -257,42 +239,18 @@ public class AwsBatchBuilder extends Builder {
             // to persist global configuration information,
             // set that to properties and call save().
             //System.out.println(json.toString());
-            nonDefaultCreds = json.containsKey("awsBatch");
-
-            if(nonDefaultCreds ) {
-                json = json.getJSONObject("awsBatch");
-                awsAccessKey = json.getString("awsAccessKey");
-                awsSecretToken = json.getString("awsSecretToken");
-                awsRegion = json.getString("awsRegion");
+            if(json.containsKey("logPollingFreq")) {
+                logPollingFreq = json.getInt("logPollingFreq");
             }
             else {
-                awsRegion = "";
-                awsAccessKey = "";
-                awsSecretToken = "";
+                logPollingFreq = 15;
             }
-
             save();
             return true; // indicate that everything is good so far
         }
 
-        public boolean getNonDefaultCreds()   { return nonDefaultCreds; }
-
-
-        public String getAwsAccessKey()   { return awsAccessKey; }
-        public String getAwsSecretToken() {
-            return awsSecretToken;
-        }
-        public String getAwsRegion()      { return awsRegion ; }
-
-
-        public AWSBatch getAwsBatch() {
-            return !nonDefaultCreds ? AWSBatchClientBuilder.defaultClient() :
-                AWSBatchClientBuilder.standard()
-                        .withRegion(awsRegion)
-                        .withCredentials(new AWSStaticCredentialsProvider(
-                                new BasicAWSCredentials(awsAccessKey, awsSecretToken)))
-                        .build();
-
+        public int getLogPollingFreq() {
+            return logPollingFreq;
         }
     }
 

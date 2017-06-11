@@ -5,18 +5,9 @@
   -->
   <f:section title="AWS Batch Job Builder">
 
-  <f:optionalBlock title="User Provided AWS Credentials" name='awsBatch' checked='${descriptor.nonDefaultCreds}'>
-
-    <f:entry title="AWS Access Key" field="awsAccessKey" enabled="">
-        <f:textbox  />
-    </f:entry>
-    <f:entry title="AWS Secret Token" field="awsSecretToken">
-        <f:password />
-    </f:entry>
-    <f:entry title="AWS Region" field="awsRegion">
+    <f:entry title="Polling frequency for job status" field="logPollingFreq">
         <f:textbox />
     </f:entry>
 
-  </f:optionalBlock>
   </f:section>
 </j:jelly>

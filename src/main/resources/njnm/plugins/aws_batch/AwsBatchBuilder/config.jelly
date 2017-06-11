@@ -4,26 +4,30 @@
     <f:entry title="Job Name" field="jobname">
         <f:textbox />
     </f:entry>
+
     <f:entry title="Job Definition" field="jobdefinition">
         <f:textbox />
     </f:entry>
+
     <f:entry title="Job Queue" field="jobqueue">
         <f:textbox />
     </f:entry>
-    <f:entry title="Command" field="command">
+
+    <f:entry title="Retries" field="retries">
         <f:textbox />
     </f:entry>
-    <f:entry title="vCPU" field="vcpu">
-        <f:textbox
-        />
-    </f:entry>
-    <f:entry title="Memory (Mb)" field="memory">
-        <f:textbox
-       />
-    </f:entry>
-    <f:entry title="Retries" field="retries">
-        <f:textbox
-        />
-    </f:entry>
+
+
+    <f:section title="Container Overrides">
+        <f:entry title="Command" field="command">
+            <f:textbox />
+        </f:entry>
+        <f:entry title="vCPU" field="vcpu">
+            <f:textbox />
+        </f:entry>
+        <f:entry title="Memory (Mb)" field="memory">
+            <f:textbox />
+        </f:entry>
+    </f:section>
 
 </j:jelly>

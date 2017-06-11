@@ -6,6 +6,7 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.batch.AWSBatch;
 import com.amazonaws.services.batch.AWSBatchClientBuilder;
 import com.amazonaws.services.batch.model.ContainerOverrides;
+import com.amazonaws.services.batch.model.RetryStrategy;
 import com.amazonaws.services.batch.model.SubmitJobRequest;
 
 
@@ -51,9 +52,9 @@ public class AwsBatchBuilder extends Builder {
 
     // Container overrides
     private final List<String> command;
-    private final int vcpu;
-    private final int memory;
-    private final int retries;
+    private final Integer vcpu;
+    private final Integer memory;
+    private final Integer retries;
 
     private final HashMap<String, String> params;
     private final HashMap<String, String> environment;
@@ -73,16 +74,16 @@ public class AwsBatchBuilder extends Builder {
         this.jobdefinition = jobdefinition;
         this.jobqueue = jobqueue;
         this.command = Arrays.asList(command.split("\\s+"));
-        this.vcpu = parseIntWithDefault(vcpu, 1, "vCPU");
-        this.memory = parseIntWithDefault(memory, 1000, "memory");
-        this.retries = parseIntWithDefault(retries, 0, "retries");
+        this.vcpu = parseIntOrNull(vcpu);
+        this.memory = parseIntOrNull(memory);
+        this.retries = parseIntOrNull(retries);
         this.params = null;
         this.environment = null;
     }
 
     public AwsBatchBuilder(String jobname, String jobdefinition,
                            String command, String jobqueue,
-                           int vcpu, int memory, int retries) {
+                           Integer vcpu, Integer memory, Integer retries) {
         this.jobname = jobname;
         this.jobdefinition = jobdefinition;
         this.jobqueue = jobqueue;
@@ -95,16 +96,19 @@ public class AwsBatchBuilder extends Builder {
 
     }
 
-    public static int parseIntWithDefault(String strVal, int defaultIntValue, String what){
-        if(strVal == null || strVal.isEmpty()) return defaultIntValue;
+    private static Integer parseIntOrNull(String strVal){
+        if(strVal == null || strVal.isEmpty()) return null;
 
         try {
             return Integer.parseInt(strVal);
         }
         catch (java.lang.NumberFormatException nfe) {
-            throw new IllegalArgumentException("Can't parse "+ what + " to an int");
+            throw new IllegalArgumentException("Can't parse "+ strVal + " to an integer");
         }
+    }
 
+    private static String intOrNullToString(Integer i) {
+        return i == null ? "" : i.toString();
     }
 
     /**
@@ -115,31 +119,48 @@ public class AwsBatchBuilder extends Builder {
     public String getJobname()       { return jobname; }
     public String getJobqueue()      { return jobqueue; }
 
-    public List<String> getCommand() { return command;}
-    public int getVcpu()             { return vcpu; }
-    public int getMemory()           { return memory; }
-    public int getRetries()          { return retries; }
+    public String getCommand() {
+        StringBuilder ret = new StringBuilder();
+        for(String s: command) {
+            ret.append(s);
+            ret.append(" ");
+        }
+        return ret.toString().trim();
+    }
 
-    @Override
-    public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
-        // this is where you 'build' the projectx
-        // since this is a dummy, we just say 'hello world' and call that a build
+    public String getVcpu()             { return intOrNullToString(vcpu); }
+    public String getMemory()           { return intOrNullToString(memory); }
+    public String getRetries()          { return intOrNullToString(retries); }
 
-        // this also shows how you can consult the global configuration of the builder
-            //listener.getLogger().println(getDescriptor().toString());
-        listener.getLogger().println(this.toString());
+    private ContainerOverrides getContainerOverrides() {
+        ContainerOverrides containerOverrides = new ContainerOverrides();
+        if(!command.get(0).contentEquals("")) containerOverrides.setCommand(command);
+        if(memory != null)  containerOverrides.setMemory(memory);
+        if(vcpu != null)    containerOverrides.setVcpus(vcpu);
 
+        return containerOverrides;
+    }
+
+    private SubmitJobRequest getSubmitJobRequest() {
         SubmitJobRequest job = new SubmitJobRequest()
                 .withJobName(jobname)
                 .withJobDefinition(jobdefinition)
                 .withJobQueue(jobqueue)
                 .withContainerOverrides(
-                        new ContainerOverrides()
-                                .withCommand(command)
-                                .withMemory(memory)
-                                .withVcpus(vcpu)
+                        getContainerOverrides()
                 );
 
+        if(retries != null) job.setRetryStrategy(new RetryStrategy().withAttempts(retries));
+        return job;
+    }
+
+    @Override
+    public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
+
+
+        SubmitJobRequest job = getSubmitJobRequest();
+
+        listener.getLogger().println(job.toString());
 
 
         DescriptorImpl globals = getDescriptor();

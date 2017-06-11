@@ -221,7 +221,7 @@ public class AwsBatchBuilder extends Builder {
          * If you don't want fields to be persisted, use <tt>transient</tt>.
          */
 
-        private boolean useDefaultAwsClient = true;
+        private boolean nonDefaultCreds;
 
         private String awsAccessKey;
         private String awsSecretToken;
@@ -251,27 +251,26 @@ public class AwsBatchBuilder extends Builder {
         public boolean configure(StaplerRequest staplerRequest, JSONObject json) throws FormException {
             // to persist global configuration information,
             // set that to properties and call save().
-            // System.out.println(json.toString());
-            json = json.getJSONObject("awsBatch");
+            //System.out.println(json.toString());
+            nonDefaultCreds = json.containsKey("awsBatch");
 
-            useDefaultAwsClient =  json.getBoolean("useDefaultAwsClient");
-
-            if(useDefaultAwsClient) {
-                awsAccessKey = "";
-                awsRegion = "";
-                awsRegion = "";
-            }
-            else {
+            if(nonDefaultCreds ) {
+                json = json.getJSONObject("awsBatch");
                 awsAccessKey = json.getString("awsAccessKey");
                 awsSecretToken = json.getString("awsSecretToken");
                 awsRegion = json.getString("awsRegion");
-
             }
+            else {
+                awsRegion = "";
+                awsAccessKey = "";
+                awsSecretToken = "";
+            }
+
             save();
             return true; // indicate that everything is good so far
         }
 
-        public boolean useDefaultAwsClient()   { return useDefaultAwsClient; }
+        public boolean getNonDefaultCreds()   { return nonDefaultCreds; }
 
 
         public String getAwsAccessKey()   { return awsAccessKey; }
@@ -280,13 +279,5 @@ public class AwsBatchBuilder extends Builder {
         }
         public String getAwsRegion()      { return awsRegion ; }
 
-        @Override
-        public String toString() {
-            return useDefaultAwsClient ? "DescriptorImpl{default}" : "DescriptorImpl{" +
-                    "awsAccessKey='" + awsAccessKey + '\'' +
-                    ", awsSecretToken='" + awsSecretToken + '\'' +
-                    ", awsRegion='" + awsRegion + '\'' +
-                    '}';
-        }
     }
 }

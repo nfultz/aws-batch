@@ -3,13 +3,11 @@
   <!--
     This Jelly script is used to produce the global configuration option.
   -->
-  <f:section title="AWS Batch Job Builder" name='awsBatch'>
+  <f:section title="AWS Batch Job Builder">
 
-    <f:entry title="Use Default AWS Client">
-      <f:checkbox name="useDefaultAwsClient" checked="${descriptor.useDefaultAwsClient}" />
-    </f:entry>
+  <f:optionalBlock title="User Provided AWS Credentials" name='awsBatch' checked='${descriptor.nonDefaultCreds}'>
 
-    <f:entry title="AWS Access Key" field="awsAccessKey" enabled="${descriptor.useDefaultAwsClient}">
+    <f:entry title="AWS Access Key" field="awsAccessKey" enabled="">
         <f:textbox  />
     </f:entry>
     <f:entry title="AWS Secret Token" field="awsSecretToken">
@@ -19,5 +17,6 @@
         <f:textbox />
     </f:entry>
 
+  </f:optionalBlock>
   </f:section>
 </j:jelly>

@@ -73,11 +73,38 @@ public class AwsBatchBuilder extends Builder {
         this.jobdefinition = jobdefinition;
         this.jobqueue = jobqueue;
         this.command = Arrays.asList(command.split("\\s+"));
-        this.vcpu = Integer.parseInt(vcpu);
-        this.memory = Integer.parseInt(memory);
-        this.retries = Integer.parseInt(retries);
+        this.vcpu = parseIntWithDefault(vcpu, 1, "vCPU");
+        this.memory = parseIntWithDefault(memory, 1000, "memory");
+        this.retries = parseIntWithDefault(retries, 0, "retries");
         this.params = null;
         this.environment = null;
+    }
+
+    public AwsBatchBuilder(String jobname, String jobdefinition,
+                           String command, String jobqueue,
+                           int vcpu, int memory, int retries) {
+        this.jobname = jobname;
+        this.jobdefinition = jobdefinition;
+        this.jobqueue = jobqueue;
+        this.command = Arrays.asList(command.split("\\s+"));
+        this.vcpu = vcpu;
+        this.memory = memory;
+        this.retries = retries;
+        this.params = null;
+        this.environment = null;
+
+    }
+
+    public static int parseIntWithDefault(String strVal, int defaultIntValue, String what){
+        if(strVal == null || strVal.isEmpty()) return defaultIntValue;
+
+        try {
+            return Integer.parseInt(strVal);
+        }
+        catch (java.lang.NumberFormatException nfe) {
+            throw new IllegalArgumentException("Can't parse "+ what + " to an int");
+        }
+
     }
 
     /**

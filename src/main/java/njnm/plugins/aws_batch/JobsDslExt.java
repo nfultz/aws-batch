@@ -13,7 +13,7 @@ public class JobsDslExt extends ContextExtensionPoint {
     @DslExtensionMethod(context = StepContext.class)
     public AwsBatchBuilder aws_batch(String jobname, String jobdefinition,
                                      String command, String jobqueue,
-                                     String vcpu, String memory, String retries) {
+                                     int vcpu, int memory, int retries) {
         return new AwsBatchBuilder(jobname, jobdefinition,
                 command, jobqueue,
                 vcpu, memory, retries);

@@ -5,18 +5,22 @@ import com.amazonaws.auth.BasicAWSCredentials;
 
 import com.amazonaws.services.batch.AWSBatch;
 import com.amazonaws.services.batch.AWSBatchClientBuilder;
-import com.amazonaws.services.batch.model.ContainerOverrides;
-import com.amazonaws.services.batch.model.RetryStrategy;
-import com.amazonaws.services.batch.model.SubmitJobRequest;
+import com.amazonaws.services.batch.model.*;
 
 
-import com.amazonaws.services.batch.model.SubmitJobResult;
+import com.amazonaws.services.logs.AWSLogs;
+import com.amazonaws.services.logs.AWSLogsClientBuilder;
+import com.amazonaws.services.logs.model.GetLogEventsRequest;
+import com.amazonaws.services.logs.model.GetLogEventsResult;
+import com.amazonaws.services.logs.model.OutputLogEvent;
 import hudson.Extension;
 import hudson.Launcher;
 
+import hudson.model.BallColor;
 import hudson.model.BuildListener;
 import hudson.model.AbstractBuild;
 
+import hudson.model.Result;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
 
@@ -29,9 +33,12 @@ import javax.management.Descriptor;
 
 import net.sf.json.JSONObject;
 
+import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * AWS Batch Builder {@link Builder}.
@@ -157,7 +164,6 @@ public class AwsBatchBuilder extends Builder {
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
 
-
         SubmitJobRequest job = getSubmitJobRequest();
 
         listener.getLogger().println(job.toString());
@@ -167,6 +173,10 @@ public class AwsBatchBuilder extends Builder {
 
         SubmitJobResult sjr = awsbatch.submitJob(job);
         listener.getLogger().println("Job Submitted:\n" + sjr.toString());
+
+        BatchLogRetriever retriever = new BatchLogRetriever(listener, awsbatch, sjr, 15);
+
+        retriever.doLogging();
 
         return true;
     }
@@ -285,4 +295,5 @@ public class AwsBatchBuilder extends Builder {
 
         }
     }
+
 }

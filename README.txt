@@ -16,5 +16,3 @@ job('Batch_demo_foo') {
     }
 }
 
-TODO:
-  * Update build status by polling job id, checking exit code

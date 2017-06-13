@@ -74,7 +74,7 @@ public class BatchLogRetriever {
     }
 
 
-    public void doLogging() {
+    public boolean doLogging() {
         boolean done = false;
         while(!done){
             done = singleLogStep();
@@ -91,7 +91,6 @@ public class BatchLogRetriever {
         logger.printf("Finished with exit code %d\n", exitCode);
 
         boolean success = status == JobStatus.SUCCEEDED && exitCode == 0;
-        listener.finished(success ? Result.SUCCESS : Result.FAILURE);
 
 
         logger.println("Fetching logs from cloudwatch logs for final attempt...");
@@ -100,6 +99,7 @@ public class BatchLogRetriever {
 
         fetchCloudWatchLogs(ARN);
 
+        return success;
 
     }
 

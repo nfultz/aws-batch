@@ -5,6 +5,7 @@ import com.amazonaws.services.batch.AWSBatchClientBuilder;
 import com.amazonaws.services.batch.model.*;
 
 
+import hudson.AbortException;
 import hudson.Extension;
 import hudson.Launcher;
 
@@ -22,9 +23,7 @@ import javax.management.Descriptor;
 
 import net.sf.json.JSONObject;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 /**
  * AWS Batch Builder {@link Builder}.
@@ -49,8 +48,8 @@ public class AwsBatchBuilder extends Builder {
     private final Integer memory;
     private final Integer retries;
 
-    private final HashMap<String, String> params;
-    private final HashMap<String, String> environment;
+    private final Map<String, String> params;
+    private final Map<String, String> environment;
 
 
     /**
@@ -86,6 +85,22 @@ public class AwsBatchBuilder extends Builder {
         this.retries = retries;
         this.params = null;
         this.environment = null;
+
+    }
+
+    public AwsBatchBuilder(String jobname, String jobdefinition,
+                           List<String> command, String jobqueue,
+                           Integer vcpu, Integer memory, Integer retries,
+                           Map<String,String> params, Map<String,String> environment) {
+        this.jobname = jobname;
+        this.jobdefinition = jobdefinition;
+        this.jobqueue = jobqueue;
+        this.command = command;
+        this.vcpu = vcpu;
+        this.memory = memory;
+        this.retries = retries;
+        this.params = params;
+        this.environment = environment;
 
     }
 
@@ -130,8 +145,18 @@ public class AwsBatchBuilder extends Builder {
         if(!command.get(0).contentEquals("")) containerOverrides.setCommand(command);
         if(memory != null)  containerOverrides.setMemory(memory);
         if(vcpu != null)    containerOverrides.setVcpus(vcpu);
+        if(environment != null) containerOverrides.setEnvironment(mapToColl(environment));
 
         return containerOverrides;
+    }
+
+    private static Collection<KeyValuePair> mapToColl(Map<String, String> map) {
+        List<KeyValuePair> ret = new ArrayList<>();
+        for(Map.Entry<String, String> e : map.entrySet())
+            ret.add(new KeyValuePair().withName(e.getKey()).withValue(e.getValue()));
+
+        return ret;
+
     }
 
     private SubmitJobRequest getSubmitJobRequest() {
@@ -144,11 +169,13 @@ public class AwsBatchBuilder extends Builder {
                 );
 
         if(retries != null) job.setRetryStrategy(new RetryStrategy().withAttempts(retries));
+        if(params != null) job.setParameters(params);
+
         return job;
     }
 
     @Override
-    public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
+    public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) throws AbortException {
 
         SubmitJobRequest job = getSubmitJobRequest();
 
@@ -162,7 +189,9 @@ public class AwsBatchBuilder extends Builder {
 
         BatchLogRetriever retriever = new BatchLogRetriever(listener, awsbatch, sjr, getDescriptor().logPollingFreq);
 
-        retriever.doLogging();
+        boolean success = retriever.doLogging();
+
+        if(!success) throw new AbortException(); // Docs say returning false is deprecated, and to throw an exception instead
 
         return true;
     }

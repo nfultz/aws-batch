@@ -41,13 +41,13 @@
 
   <name>AWS Batch Plugin</name>
   <description>Submits jobs to AWS Batch and retrieves their logs</description>
-  <url>https://github.com/nfultz/aws-batch</url>
+  <url>https://github.com/jenkinsci/aws-batch-plugin</url>
   <inceptionYear>2017</inceptionYear>
 
   <licenses>
     <license>
       <name>The MIT license</name>
-      <url>https://github.com/nfultz/aws-batch/raw/master/LICENSE.txt</url>
+      <url>https://github.com/jenkinsci/aws-batch-plugin/raw/master/LICENSE.txt</url>
       <distribution>repo</distribution>
     </license>
   </licenses>
@@ -61,9 +61,9 @@
   </developers>
 
   <scm>
-    <connection>scm:git:git://github.com/nfultz/aws-batch.git</connection>
-    <developerConnection>scm:git:git@github.com:nfultz/aws-batch.git</developerConnection>
-    <url>https://github.com/nfultz/aws-batch</url>
+    <connection>scm:git:git://github.com/jenkinsci/aws-batch-plugin.git</connection>
+    <developerConnection>scm:git:git@github.com:jenkinsci/aws-batch-plugin.git</developerConnection>
+    <url>https://github.com/jenkinsci/aws-batch-plugin</url>
     <tag>HEAD</tag>
   </scm>
 
@@ -84,7 +84,7 @@
   <distributionManagement>
     <site>
       <id>github-project-site</id>
-      <url>gitsite:git@github.com/nfultz/aws-batch</url>
+      <url>gitsite:git@github.com/jenkinsci/aws-batch-plugin</url>
     </site>
   </distributionManagement>
 

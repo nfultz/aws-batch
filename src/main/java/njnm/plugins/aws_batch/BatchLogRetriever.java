@@ -65,7 +65,7 @@ public class BatchLogRetriever {
 
 
         if(newstatus != status)
-            logger.printf("[%s] Attempt %d: %s\n", df.format(new Date()), attempts.size(), status);
+            logger.printf("[%s] Attempt %d: %s%n", df.format(new Date()), attempts.size(), status);
 
         status = newstatus;
 
@@ -88,7 +88,7 @@ public class BatchLogRetriever {
         AttemptDetail attempt = attempts.get(attempts.size() - 1);
         Integer exitCode = attempt.getContainer().getExitCode();
 
-        logger.printf("Finished with exit code %d\n", exitCode);
+        logger.printf("Finished with exit code %d%n", exitCode);
 
         boolean success = status == JobStatus.SUCCEEDED && exitCode == 0;
 
@@ -110,7 +110,7 @@ public class BatchLogRetriever {
 
         AWSLogs awslogs = AWSLogsClientBuilder.defaultClient();
 
-//        logger.printf("%s %s %s\n%s\n", jobName, jobID, ecsTaskID, ARN);
+//        logger.printf("%s %s %s%n%s%n", jobName, jobID, ecsTaskID, ARN);
 
         GetLogEventsResult logEventsResult =  awslogs.getLogEvents(
                 new GetLogEventsRequest()
@@ -119,7 +119,7 @@ public class BatchLogRetriever {
         );
 
         for(OutputLogEvent ole : logEventsResult.getEvents()) {
-            logger.printf("[%s] %s\n", df.format(new Date(ole.getTimestamp())), ole.getMessage());
+            logger.printf("[%s] %s%n", df.format(new Date(ole.getTimestamp())), ole.getMessage());
         }
 
     }

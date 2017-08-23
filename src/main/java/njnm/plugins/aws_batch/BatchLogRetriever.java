@@ -1,5 +1,6 @@
 package njnm.plugins.aws_batch;
 
+import com.amazonaws.AbortedException;
 import com.amazonaws.services.batch.AWSBatch;
 import com.amazonaws.services.batch.model.*;
 import com.amazonaws.services.logs.AWSLogs;
@@ -13,10 +14,7 @@ import hudson.model.Result;
 import java.io.PrintStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -35,7 +33,7 @@ public class BatchLogRetriever {
     private final String jobID, jobName;
 
     // Pretty printing timestamps, is there a better way?
-    DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+    private static DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 
 
     public BatchLogRetriever(BuildListener listener, AWSBatch batch, SubmitJobResult sjr, int time) {
@@ -48,74 +46,140 @@ public class BatchLogRetriever {
         df.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
 
-    private JobDetail jd;
-    private JobDetail fetchJobInfo() {
+    private BatchJobDetail fetchJobInfo(String jobID, AWSBatch batch) {
         DescribeJobsResult djr = batch.describeJobs(new DescribeJobsRequest().withJobs(jobID));
-        return jd = djr.getJobs().get(0);
+        return new BatchJobDetail(djr);
     }
 
-    List<AttemptDetail> attempts = new ArrayList<AttemptDetail>();
-    private JobStatus status = JobStatus.PENDING;
+    private static class BatchJobDetail {
+        final String jobID;
+        final JobStatus jobStatus;
+        final int numAttempts;
+        private final AttemptContainerDetail _container;
 
-    private boolean singleLogStep() {
-        fetchJobInfo();
+        BatchJobDetail(DescribeJobsResult djr) {
+            JobDetail detail = djr.getJobs().get(0);
+            jobID = detail.getJobId();
+            jobStatus = JobStatus.fromValue(detail.getStatus());
+            List<AttemptDetail> attempts = detail.getAttempts();
+            numAttempts = attempts.size();
+            _container = numAttempts > 0 ? attempts.get(numAttempts - 1).getContainer() : null;
+        }
 
-        JobStatus newstatus = JobStatus.fromValue(jd.getStatus());
-        attempts = jd.getAttempts();
+        BatchJobDetail(String jobID){
+            this.jobID = jobID;
+            jobStatus = null;
+            numAttempts = 0;
+            _container = null;
+        }
 
+        private static final EnumSet<JobStatus> doneStatues = EnumSet.of(JobStatus.SUCCEEDED, JobStatus.FAILED);
+        boolean isDone() {
+            return doneStatues.contains(jobStatus);
+        }
 
-        if(newstatus != status)
-            logger.printf("[%s] Attempt %d: %s%n", df.format(new Date()), attempts.size(), status);
-
-        status = newstatus;
-
-        return status == JobStatus.SUCCEEDED  || status == JobStatus.FAILED;
-
-    }
-
-
-    public boolean doLogging() {
-        boolean done = false;
-        while(!done){
-            done = singleLogStep();
-
-            try {
-                TimeUnit.SECONDS.sleep(time);
-            } catch (InterruptedException e) {}
+        boolean isSuccess() {
+            return numAttempts > 0 && _container.getExitCode() == 0 && jobStatus == JobStatus.SUCCEEDED;
         }
 
 
-        AttemptDetail attempt = attempts.get(attempts.size() - 1);
-        Integer exitCode = attempt.getContainer().getExitCode();
+        int getExitCode() {
+            return _container.getExitCode();
 
-        logger.printf("Finished with exit code %d%n", exitCode);
+        }
 
-        boolean success = status == JobStatus.SUCCEEDED && exitCode == 0;
+        String getStreamName() {
+            return _container.getLogStreamName();
+        }
+
+        @Override
+        public String toString() {
+            return jobStatus == null ? "Not Started... " : String.format("Attempt %d: %s%n", numAttempts, jobStatus);
+        }
+    }
 
 
-        logger.println("Fetching logs from cloudwatch logs for final attempt...");
-        logger.println("-------------------------------------------------------");
-        String ARN = attempt.getContainer().getTaskArn();
+    private static BatchJobDetail singleLogStep(BatchJobDetail lastJD, AWSBatch batch, PrintStream logger) {
+        DescribeJobsResult djr = batch.describeJobs(new DescribeJobsRequest().withJobs(lastJD.jobID));
 
-        fetchCloudWatchLogs(ARN);
+        BatchJobDetail jd = new BatchJobDetail(djr);
 
-        return success;
+        if(jd.jobStatus != lastJD.jobStatus)
+            logger.printf("[%s] %s", df.format(new Date()), jd);
+
+        return jd;
+
+    }
+
+    private static void doTerminate(BatchJobDetail jd, AWSBatch batch, PrintStream logger) {
+        batch.terminateJob(new TerminateJobRequest()
+                                .withJobId(jd.jobID)
+                                .withReason("Terminated from Jenkins"));
+        logger.printf("[%s] Sent Termination Request%n", df.format(new Date()));
 
     }
 
 
-    private void fetchCloudWatchLogs(String ARN) {
+    public void doLogging() throws InterruptedException, AbortedException{
 
-        String ecsTaskID = ARN.substring(ARN.indexOf('/') + 1);
+        BatchJobDetail jd = new BatchJobDetail(jobID);
+        boolean isAborted = false;
+        while(!jd.isDone()){
+            jd = singleLogStep(jd, batch, logger);
+
+            try {
+                TimeUnit.SECONDS.sleep(time);
+            } catch (InterruptedException e) {
+                isAborted = true;
+            }
+
+            if(isAborted) doTerminate(jd, batch, logger);
+        }
+
+        if(isAborted && jd.jobStatus == JobStatus.FAILED) {
+//            listener.finished(Result.ABORTED);
+            throw new InterruptedException("Killed by Cancel button");
+        }
+
+        if(jd.numAttempts == 0){
+            logger.println("Failed before any attempts began.");
+//            listener.finished(Result.FAILURE);
+            throw new AbortedException("Didn't send any attempts to AWS");
+        }
+
+        logger.printf("Finished with exit code %d%n", jd.getExitCode());
+
+        try {
+            fetchCloudWatchLogs(jd.getStreamName(), logger);
+        } catch (Exception e){
+            logger.printf("[%s] Fetching '%s' failed:%n", df.format(new Date()), jd.getStreamName());
+            e.printStackTrace(logger);
+        }
+
+        if(!jd.isSuccess()){
+//            listener.finished(Result.FAILURE);
+            throw new AbortedException("Batch ran, but not successful");
+
+        }
+
+//        listener.finished(Result.SUCCESS);
+
+
+    }
+
+
+    private void fetchCloudWatchLogs(String logStreamName, PrintStream logger) {
+        if(logStreamName == null || "".equals(logStreamName)) return;
+
+        logger.println("Fetching logs from cloudwatch logs for final attempt...");
+        logger.println("-------------------------------------------------------");
 
         AWSLogs awslogs = AWSLogsClientBuilder.defaultClient();
-
-//        logger.printf("%s %s %s%n%s%n", jobName, jobID, ecsTaskID, ARN);
 
         GetLogEventsResult logEventsResult =  awslogs.getLogEvents(
                 new GetLogEventsRequest()
                         .withLogGroupName("/aws/batch/job")
-                        .withLogStreamName(String.format("%s/%s/%s", jobName, jobID, ecsTaskID))
+                        .withLogStreamName(logStreamName)
         );
 
         for(OutputLogEvent ole : logEventsResult.getEvents()) {

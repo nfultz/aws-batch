@@ -89,7 +89,7 @@
   </distributionManagement>
 
   <properties>
-    <aws.version> 1.11.144</aws.version>
+    <aws.version> 1.11.177</aws.version>
     <jsonpath.version>2.0.0</jsonpath.version>
   </properties>
 

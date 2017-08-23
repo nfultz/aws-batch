@@ -5,24 +5,27 @@ import com.amazonaws.services.batch.AWSBatchClientBuilder;
 import com.amazonaws.services.batch.model.*;
 
 
-import hudson.AbortException;
-import hudson.Extension;
-import hudson.Launcher;
+import hudson.*;
 
-import hudson.model.BuildListener;
-import hudson.model.AbstractBuild;
 
+import hudson.model.*;
+
+import hudson.tasks.BuildStep;
+import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
 
+import jenkins.model.Jenkins;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.management.Descriptor;
+import javax.annotation.Nonnull;
 
 
 import net.sf.json.JSONObject;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -35,7 +38,7 @@ import java.util.*;
  */
 
 
-public class AwsBatchBuilder extends Builder {
+public class AwsBatchBuilder  extends Builder {
 
     // Job fields
     private final String jobname;
@@ -175,7 +178,7 @@ public class AwsBatchBuilder extends Builder {
     }
 
     @Override
-    public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) throws AbortException {
+    public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) throws AbortException, InterruptedException {
 
         SubmitJobRequest job = getSubmitJobRequest();
 
@@ -189,13 +192,12 @@ public class AwsBatchBuilder extends Builder {
 
         BatchLogRetriever retriever = new BatchLogRetriever(listener, awsbatch, sjr, getDescriptor().logPollingFreq);
 
-        boolean success = retriever.doLogging();
+        retriever.doLogging();
 
-        if(!success) throw new AbortException(); // Docs say returning false is deprecated, and to throw an exception instead
+//        if(!success) throw new AbortException(); // Docs say returning false is deprecated, and to throw an exception instead
 
         return true;
     }
-
 
 
     /**
@@ -212,6 +214,7 @@ public class AwsBatchBuilder extends Builder {
     public DescriptorImpl getDescriptor() {
         // see Descriptor javadoc for more about what a descriptor is.
         return (DescriptorImpl)super.getDescriptor();
+//        return (DescriptorImpl) Jenkins.getInstance().getDescriptorOrDie(this.getClass());
     }
 
     @Override
@@ -226,6 +229,27 @@ public class AwsBatchBuilder extends Builder {
                 ", retries=" + retries +
                 '}';
     }
+
+    @Override
+    public boolean prebuild(AbstractBuild<?, ?> abstractBuild, BuildListener buildListener) {
+        return true;
+    }
+/*
+    @Override
+    public Action getProjectAction(AbstractProject<?, ?> abstractProject) {
+        return null;
+    }
+
+    @Override
+    public Collection<? extends Action> getProjectActions(AbstractProject<?, ?> abstractProject) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public BuildStepMonitor getRequiredMonitorService() {
+        return BuildStepMonitor.NONE;
+    }
+*/
 
     /**
      * Descriptor for {@link AwsBatchBuilder}.
@@ -278,9 +302,6 @@ public class AwsBatchBuilder extends Builder {
             return true; // indicate that everything is good so far
         }
 
-        public int getLogPollingFreq() {
-            return logPollingFreq;
-        }
     }
 
 }

@@ -1,6 +1,5 @@
 package njnm.plugins.aws_batch;
 
-import com.amazonaws.AbortedException;
 import com.amazonaws.services.batch.AWSBatch;
 import com.amazonaws.services.batch.model.*;
 import com.amazonaws.services.logs.AWSLogs;
@@ -8,14 +7,14 @@ import com.amazonaws.services.logs.AWSLogsClientBuilder;
 import com.amazonaws.services.logs.model.GetLogEventsRequest;
 import com.amazonaws.services.logs.model.GetLogEventsResult;
 import com.amazonaws.services.logs.model.OutputLogEvent;
-import hudson.model.BuildListener;
-import hudson.model.Result;
+import hudson.AbortException;
 
 import java.io.PrintStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+
 
 /**
  * Created by nfultz on 6/11/17.
@@ -25,30 +24,22 @@ public class BatchLogRetriever {
 
     private final int time;
 
-    private final BuildListener listener;
     private final PrintStream logger;
     private final AWSBatch batch;
 
 
-    private final String jobID, jobName;
+    private final String jobID;
 
     // Pretty printing timestamps, is there a better way?
     private static DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 
 
-    public BatchLogRetriever(BuildListener listener, AWSBatch batch, SubmitJobResult sjr, int time) {
-        this.listener = listener;
-        this.logger = listener.getLogger();
+    public BatchLogRetriever(PrintStream logger, AWSBatch batch, String jobID, int time) {
+        this.logger = logger;
         this.batch = batch;
-        this.jobID = sjr.getJobId();
-        this.jobName = sjr.getJobName();
+        this.jobID = jobID;
         this.time = time;
         df.setTimeZone(TimeZone.getTimeZone("UTC"));
-    }
-
-    private BatchJobDetail fetchJobInfo(String jobID, AWSBatch batch) {
-        DescribeJobsResult djr = batch.describeJobs(new DescribeJobsRequest().withJobs(jobID));
-        return new BatchJobDetail(djr);
     }
 
     private static class BatchJobDetail {
@@ -120,7 +111,7 @@ public class BatchLogRetriever {
     }
 
 
-    public void doLogging() throws InterruptedException, AbortedException{
+    public void doLogging() throws InterruptedException, AbortException {
 
         BatchJobDetail jd = new BatchJobDetail(jobID);
         boolean isAborted = false;
@@ -131,9 +122,9 @@ public class BatchLogRetriever {
                 TimeUnit.SECONDS.sleep(time);
             } catch (InterruptedException e) {
                 isAborted = true;
+                doTerminate(jd, batch, logger);
             }
 
-            if(isAborted) doTerminate(jd, batch, logger);
         }
 
         if(isAborted && jd.jobStatus == JobStatus.FAILED) {
@@ -144,7 +135,7 @@ public class BatchLogRetriever {
         if(jd.numAttempts == 0){
             logger.println("Failed before any attempts began.");
 //            listener.finished(Result.FAILURE);
-            throw new AbortedException("Didn't send any attempts to AWS");
+            throw new AbortException("Didn't send any attempts to AWS");
         }
 
         logger.printf("Finished with exit code %d%n", jd.getExitCode());
@@ -158,7 +149,7 @@ public class BatchLogRetriever {
 
         if(!jd.isSuccess()){
 //            listener.finished(Result.FAILURE);
-            throw new AbortedException("Batch ran, but not successful");
+            throw new AbortException("Batch ran, but not successful");
 
         }
 

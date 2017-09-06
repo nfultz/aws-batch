@@ -31,7 +31,7 @@ public class BatchLogRetriever {
     private final String jobID;
 
     // Pretty printing timestamps, is there a better way?
-    private static DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+    private DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 
 
     public BatchLogRetriever(PrintStream logger, AWSBatch batch, String jobID, int time) {
@@ -90,21 +90,21 @@ public class BatchLogRetriever {
     }
 
 
-    private static BatchJobDetail singleLogStep(BatchJobDetail lastJD, AWSBatch batch, PrintStream logger) {
-        DescribeJobsResult djr = batch.describeJobs(new DescribeJobsRequest().withJobs(lastJD.jobID));
+    private BatchJobDetail singleLogStep(JobStatus lastStatus) {
+        DescribeJobsResult djr = batch.describeJobs(new DescribeJobsRequest().withJobs(jobID));
 
         BatchJobDetail jd = new BatchJobDetail(djr);
 
-        if(jd.jobStatus != lastJD.jobStatus)
+        if(jd.jobStatus != lastStatus)
             logger.printf("[%s] %s", df.format(new Date()), jd);
 
         return jd;
 
     }
 
-    private static void doTerminate(BatchJobDetail jd, AWSBatch batch, PrintStream logger) {
+    private void doTerminate() {
         batch.terminateJob(new TerminateJobRequest()
-                                .withJobId(jd.jobID)
+                                .withJobId(jobID)
                                 .withReason("Terminated from Jenkins"));
         logger.printf("[%s] Sent Termination Request%n", df.format(new Date()));
 
@@ -116,13 +116,13 @@ public class BatchLogRetriever {
         BatchJobDetail jd = new BatchJobDetail(jobID);
         boolean isAborted = false;
         while(!jd.isDone()){
-            jd = singleLogStep(jd, batch, logger);
+            jd = singleLogStep(jd.jobStatus);
 
             try {
                 TimeUnit.SECONDS.sleep(time);
             } catch (InterruptedException e) {
                 isAborted = true;
-                doTerminate(jd, batch, logger);
+                doTerminate();
             }
 
         }
